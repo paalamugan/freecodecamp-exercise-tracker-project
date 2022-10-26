@@ -6,7 +6,7 @@ const crypto = require("crypto");
 
 app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.get("/", (req, res) => {
   res.sendFile(__dirname + "/views/index.html");
@@ -56,11 +56,11 @@ app.post("/api/users/:_id/exercises", (req, res) => {
   res.json(result);
 });
 
-app.get("/api/users/:_id/logs?[from][&to][&limit]", (req, res) => {
+app.get("/api/users/:_id/logs", (req, res) => {
   const _id = req.params._id;
   const { limit, from, to } = req.query || {};
   
-  console.log("query", query)
+  console.log("query", req.query)
   const findUser = users.find((user) => user._id === _id);
   if (!findUser) return res.status(404).send({ error: "User Not found" });
   let exercises = findUser.exercises;
