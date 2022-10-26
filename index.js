@@ -15,7 +15,12 @@ app.get("/", (req, res) => {
 const users = [];
 
 app.get("/api/users", (req, res) => {
-  res.json(users);
+  res.json(users.map((user) => {
+    return {
+      user: user.username,
+      _id: user._id
+    }
+  }));
 });
 
 app.post("/api/users", (req, res) => {
@@ -65,10 +70,6 @@ app.get("/api/users/:_id/logs", (req, res) => {
   if (!findUser) return res.status(404).send({ error: "User Not found" });
   let exercises = findUser.exercises;
 
-  if (limit) {
-    exercises = exercises.slice(0, +limit);
-  }
-
   if (from && to) {
     exercises = exercises.filter((exercise) => {
       const fromDate = new Date(from).valueOf();
@@ -77,6 +78,18 @@ app.get("/api/users/:_id/logs", (req, res) => {
       return exerciseDate >= fromDate && exerciseDate <= toDate;
     });
   }
+
+  if (limit) {
+    exercises = exercises.slice(0, +limit);
+  }
+
+  exercises = exercises.map((exercise) => {
+    return {
+      description: exercise.description,
+      duration: exercise.duration,
+      date: exercise.date,
+    }
+  })
   const result = {
     _id: findUser._id,
     username: findUser.username,
