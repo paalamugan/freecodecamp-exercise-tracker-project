@@ -15,12 +15,7 @@ app.get("/", (req, res) => {
 const users = [];
 
 app.get("/api/users", (req, res) => {
-  res.json(users.map((user) => {
-    return {
-      user: user.username,
-      _id: user._id
-    }
-  }));
+  res.json(users);
 });
 
 app.post("/api/users", (req, res) => {
@@ -32,16 +27,20 @@ app.post("/api/users", (req, res) => {
       _id: findUser._id
     });
   }
+  
   const result = {
     username: username,
     _id: crypto.randomBytes(16).toString("hex"),
     exercises: []
   }
+  
   users.push(result);
+  
   res.json({
     username: result.username, 
     _id: result._id
   });
+  
 });
 
 app.post("/api/users/:_id/exercises", (req, res) => {
@@ -49,31 +48,40 @@ app.post("/api/users/:_id/exercises", (req, res) => {
   const findUser = users.find((user) => user._id === _id);
   if (!findUser) return res.status(404).send({ error: "User Not found" });
 
-  const { description, duration, date } = req.body;
+  let { description, duration, date } = req.body;
+  if (date) {
+    date = new Date(date).toISOString();
+  } else {
+    date = new Date().toISOString();
+  }
+  
   const result = {
     username: findUser.username,
-    date: new Date(date || Date.now()).toDateString(),
+    date: date,
     description: description,
     duration: +duration,
     _id: findUser._id,
   };
   findUser.exercises.push(result);
-  res.json(result);
+
+  res.json({
+    ...result,
+    date: new Date(result.date).toDateString()
+  });
 });
 
 app.get("/api/users/:_id/logs", (req, res) => {
   const _id = req.params._id;
-  const { limit, from, to } = req.query || {};
+  const { limit, from, to } = req.query;
   
-  console.log("query", req.query)
   const findUser = users.find((user) => user._id === _id);
   if (!findUser) return res.status(404).send({ error: "User Not found" });
   let exercises = findUser.exercises;
 
   if (from && to) {
     exercises = exercises.filter((exercise) => {
-      const fromDate = new Date(from).valueOf();
-      const toDate = new Date(to).valueOf();
+      const fromDate = new Date(new Date(from).toISOString()).valueOf();
+      const toDate = new Date(new Date(to).toISOString()).valueOf();
       const exerciseDate = new Date(exercise.date).valueOf();
       return exerciseDate >= fromDate && exerciseDate <= toDate;
     });
@@ -82,14 +90,15 @@ app.get("/api/users/:_id/logs", (req, res) => {
   if (limit) {
     exercises = exercises.slice(0, +limit);
   }
-
+  
   exercises = exercises.map((exercise) => {
     return {
       description: exercise.description,
       duration: exercise.duration,
-      date: exercise.date,
+      date: new Date(exercise.date).toDateString(),
     }
-  })
+  });
+  
   const result = {
     _id: findUser._id,
     username: findUser.username,
